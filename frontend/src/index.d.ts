@@ -1,0 +1,1 @@
+declare module 'algosdk/dist/browser/algosdk.min.js';
