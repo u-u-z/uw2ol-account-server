@@ -4,6 +4,6 @@ namespace Backend.Dtos;
 
 public class NonceRequestDto
 {
-    [EthereumAddress || AlgorandAddress]
+    [EthereumAddress]
     public string Address { get; set; } = default!;
 }
