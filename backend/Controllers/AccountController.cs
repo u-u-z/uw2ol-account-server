@@ -57,6 +57,10 @@ public class AccountController : ControllerBase
     public async Task<NonceResponseDto> PrepareNonce(NonceRequestDto request) =>
         new(await _accountService.RefreshNonceAsync(request.Address));
 
+    [HttpPost("algononce")]
+    public async Task<NonceResponseDto> PrepareNonce(AlgoNonceRequestDto request) =>
+        new(await _accountService.RefreshNonceAsync(request.Address,isAlgo:true));
+
     [HttpPost("login")]
     [Authorize]
     public IActionResult Login()

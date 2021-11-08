@@ -40,17 +40,22 @@ public class AccountService
         _channel.QueueDeclare("LoginResult", exclusive: false);
     }
 
-    public async ValueTask<string?> GetNonceAsync(string address) => await _cache.GetStringAsync($"nonce:{address.ToLowerInvariant()}");
-    public async ValueTask<int> RefreshNonceAsync(string address)
+    public async ValueTask<string?> GetNonceAsync(string address, bool isAlgo = false) => await _cache.GetStringAsync($"nonce:{(isAlgo? address.ToUpperInvariant(): address.ToLowerInvariant())}");
+
+    public async ValueTask<int> RefreshNonceAsync(string address,bool isAlgo = false)
     {
         var result = Random.Shared.Next(10000);
 
-        await _cache.SetStringAsync($"nonce:{address.ToLowerInvariant()}", result.ToString(), new DistributedCacheEntryOptions()
+        System.Console.WriteLine((isAlgo?"isAlgo!":"noAlgo!"));
+
+        await _cache.SetStringAsync($"nonce:{(isAlgo ? address.ToUpperInvariant() : address.ToLowerInvariant())}", result.ToString(), new DistributedCacheEntryOptions()
         {
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5),
         });
 
         return result;
+
+
     }
 
     public void Register(string address, string name)
