@@ -35,30 +35,26 @@ function App() {
     // const nonce = await getNonce(algoUserAddresses[index].address, true);
     console.log(algoUserAddresses[index].address);
     const nonce = 222
-  
+
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
       suggestedParams: {
         ...params,
       },
       from: algoUserAddresses[index].address,
       to: algoUserAddresses[index].address,
-      amount: 0,
+      amount: 1,
       note: new TextEncoder().encode(`I'm signing my one-time nonce: ${nonce}`),
     });
+    // TODO NEED RESOLVE 
 
-    console.log(`txn`, txn);
     const txnByte = txn.toByte();
-    console.log(`txnByte`, txnByte)
-
 
     const signedTxn = await myAlgoConnect.signTransaction(txnByte);
     const decodeSignedTxn = algosdk.decodeSignedTransaction(signedTxn.blob);
-
-    console.log(signedTxn, decodeSignedTxn)
-
-    console.log(`verify`, algosdk.verifyBytes(signedTxn.blob, decodeSignedTxn.sig, algoUserAddresses[index].address));
-
-
+    console.log()
+    // PROBLEMS HERE ...
+    console.log(`verify`, algosdk.verifyBytes(Buffer.from(decodeSignedTxn.txn.toString()), decodeSignedTxn.sig, algoUserAddresses[index].address));
+    toString
   }, [algoUserAddresses]);
 
   return <>
