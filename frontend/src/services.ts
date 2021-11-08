@@ -1,5 +1,5 @@
-export async function getNonce(address: string) {
-  const response = await fetch("/account/nonce", {
+export async function getNonce(address: string, isAlgo: boolean = false) {
+  const response = await fetch(`/account/${isAlgo ? "algo" : ""}nonce`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

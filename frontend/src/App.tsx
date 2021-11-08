@@ -3,6 +3,7 @@ import { useCallback, useState } from "react";
 import MyAlgoConnect from '@randlabs/myalgo-connect';
 import algosdk from "algosdk/dist/browser/algosdk.min.js";
 import { Buffer } from 'buffer';
+import { auth, getNonce, login, register } from "./services"
 
 const myAlgoConnect = new MyAlgoConnect();
 
@@ -19,20 +20,45 @@ function App() {
 
   const signMessage = useCallback(async (index: number) => {
 
+    const session = new URLSearchParams(window.location.search).get("session");
+
+    if (!session) {
+      window.alert("Missing session");
+      return;
+    }
+
+    alert('We will only initiate signatures, we will not send any transactions.');
+
     const algodClient = new algosdk.Algodv2("", "https://api.testnet.algoexplorer.io", '');
     const params = await algodClient.getTransactionParams().do();
 
+    // const nonce = await getNonce(algoUserAddresses[index].address, true);
+    console.log(algoUserAddresses[index].address);
+    const nonce = 222
+  
     const txn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
       suggestedParams: {
         ...params,
       },
       from: algoUserAddresses[index].address,
       to: algoUserAddresses[index].address,
-      amount: 7788,
-      note: new TextEncoder().encode("Hello, world!"),
+      amount: 0,
+      note: new TextEncoder().encode(`I'm signing my one-time nonce: ${nonce}`),
     });
-    const signedTxn = await myAlgoConnect.signTransaction(txn.toByte());
-    console.log(signedTxn);
+
+    console.log(`txn`, txn);
+    const txnByte = txn.toByte();
+    console.log(`txnByte`, txnByte)
+
+
+    const signedTxn = await myAlgoConnect.signTransaction(txnByte);
+    const decodeSignedTxn = algosdk.decodeSignedTransaction(signedTxn.blob);
+
+    console.log(signedTxn, decodeSignedTxn)
+
+    console.log(`verify`, algosdk.verifyBytes(signedTxn.blob, decodeSignedTxn.sig, algoUserAddresses[index].address));
+
+
   }, [algoUserAddresses]);
 
   return <>
