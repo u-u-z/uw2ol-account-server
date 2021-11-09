@@ -27,7 +27,7 @@ function App() {
       return;
     }
 
-    alert('We will only initiate signatures, we will not send any transactions.');
+    //alert('We will only initiate signatures, we will not send any transactions.');
 
     const algodClient = new algosdk.Algodv2("", "https://api.testnet.algoexplorer.io", '');
     const params = await algodClient.getTransactionParams().do();
@@ -49,12 +49,26 @@ function App() {
 
     const txnByte = txn.toByte();
 
+    console.log(txnByte);
+
     const signedTxn = await myAlgoConnect.signTransaction(txnByte);
+    console.log(`signedTxn`, signedTxn);
+    const decodeObj = algosdk.decodeObj(signedTxn.blob);
+
+    //console.log(`decodeObj`, decodeObj);
+
     const decodeSignedTxn = algosdk.decodeSignedTransaction(signedTxn.blob);
-    console.log()
+    
+    console.log(decodeSignedTxn);
+    console.log(decodeSignedTxn.txn.toByte());
+    // console.log(`decodeSignedTxn`, decodeSignedTxn);
+    // const objForEncoding = decodeSignedTxn.txn.get_obj_for_encoding();
+    // const encodingObj = algosdk.encodeObj(objForEncoding);
+    // console.log(`encodingObj`, encodingObj);
     // PROBLEMS HERE ...
-    console.log(`verify`, algosdk.verifyBytes(Buffer.from(decodeSignedTxn.txn.toString()), decodeSignedTxn.sig, algoUserAddresses[index].address));
-    toString
+    debugger
+    console.log(`verify`, algosdk.verifyBytes(decodeSignedTxn.txn.toByte(), decodeSignedTxn.sig, algoUserAddresses[index].address));
+ 
   }, [algoUserAddresses]);
 
   return <>
