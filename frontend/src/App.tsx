@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import MyAlgoConnect from '@randlabs/myalgo-connect';
 import algosdk from "algosdk/dist/browser/algosdk.min.js";
 import { Buffer } from 'buffer';
-import { auth, getNonce, login, register } from "./services"
+import * as tweetnacl from "tweetnacl";
 
 const myAlgoConnect = new MyAlgoConnect();
 
@@ -52,23 +52,14 @@ function App() {
     console.log(txnByte);
 
     const signedTxn = await myAlgoConnect.signTransaction(txnByte);
-    console.log(`signedTxn`, signedTxn);
-    const decodeObj = algosdk.decodeObj(signedTxn.blob);
 
-    //console.log(`decodeObj`, decodeObj);
+    const signature = algosdk.decodeObj(signedTxn.blob).sig
+    const message = new Uint8Array(txn.bytesToSign())
+    const publickey = algosdk.decodeAddress(algoUserAddresses[index].address).publicKey;
 
-    const decodeSignedTxn = algosdk.decodeSignedTransaction(signedTxn.blob);
-    
-    console.log(decodeSignedTxn);
-    console.log(decodeSignedTxn.txn.toByte());
-    // console.log(`decodeSignedTxn`, decodeSignedTxn);
-    // const objForEncoding = decodeSignedTxn.txn.get_obj_for_encoding();
-    // const encodingObj = algosdk.encodeObj(objForEncoding);
-    // console.log(`encodingObj`, encodingObj);
-    // PROBLEMS HERE ...
-    debugger
-    console.log(`verify`, algosdk.verifyBytes(decodeSignedTxn.txn.toByte(), decodeSignedTxn.sig, algoUserAddresses[index].address));
- 
+    const isValid = tweetnacl.sign.detached.verify(message, signature, publickey);
+    console.log(isValid)
+
   }, [algoUserAddresses]);
 
   return <>
