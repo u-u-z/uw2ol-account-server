@@ -23,6 +23,19 @@ export async function auth(address: string, signature: string, session: string) 
   return await response.json() as { accessToken: string, name?: string };
 }
 
+export async function algoAuth(address: string, signature: string, session: string, message: string) {
+
+  const response = await fetch("/account/algoauth", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ address, signature, session, message }),
+  });
+
+  return await response.json() as { accessToken: string, name?: string };
+}
+
 export async function login(accessToken: string) {
   await fetch('/account/login', {
     method: "POST",
