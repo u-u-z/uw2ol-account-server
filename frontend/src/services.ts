@@ -1,5 +1,5 @@
-export async function getNonce(address: string) {
-  const response = await fetch("/account/nonce", {
+export async function getNonce(address: string, isAlgo: boolean = false) {
+  const response = await fetch(`/account/${isAlgo ? "algo" : ""}nonce`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -18,6 +18,19 @@ export async function auth(address: string, signature: string, session: string) 
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ address, signature, session }),
+  });
+
+  return await response.json() as { accessToken: string, name?: string };
+}
+
+export async function algoAuth(address: string, signature: string, session: string, message: string) {
+
+  const response = await fetch("/account/algoauth", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ address, signature, session, message }),
   });
 
   return await response.json() as { accessToken: string, name?: string };

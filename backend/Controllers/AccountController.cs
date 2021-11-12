@@ -8,6 +8,7 @@ using Nethereum.Util;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Chaos.NaCl;
 
 namespace Backend.Controllers;
 
@@ -53,9 +54,52 @@ public class AccountController : ControllerBase
         return Ok(new AuthResponseDto(new JwtSecurityTokenHandler().WriteToken(token), _accountService.GetName(address)));
     }
 
+    [HttpPost("algoauth")]
+    public async Task<IActionResult> AlgoAuth(AlgoAuthRequestDto request)
+    {
+
+        byte[] signature = Convert.FromBase64String(request.Signature);
+        byte[] message = Convert.FromBase64String(request.Message);
+        byte[] publicKey = Convert.FromBase64String(request.Address);
+
+        var algoAddressObject = new Algorand.Address(publicKey); // public key --> Algo Address
+        string address = algoAddressObject.EncodeAsString();
+
+        var nonce = await _accountService.GetNonceAsync(address, true);
+
+        if (string.IsNullOrEmpty(nonce))
+             return Unauthorized(new MessageResponseDto("Signature verification failed 1"));
+
+        string str = System.Text.Encoding.UTF8.GetString(message);
+        bool containsSearchResult = str.Contains(nonce);
+        bool result = Chaos.NaCl.Ed25519.Verify(signature, message, publicKey);
+
+        if (!( result && containsSearchResult ))
+            return Unauthorized(new MessageResponseDto("Signature verification failed 2"));
+
+        await _accountService.RefreshNonceAsync(address,true);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: new Claim[]
+            {
+                new("Address", address),
+                new Claim("Session", request.Session),
+            },
+            expires: DateTime.Now.AddMinutes(5),
+            signingCredentials: new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256Signature));
+
+        return Ok(new AuthResponseDto(new JwtSecurityTokenHandler().WriteToken(token), _accountService.GetName(address)));
+    }
+
     [HttpPost("nonce")]
     public async Task<NonceResponseDto> PrepareNonce(NonceRequestDto request) =>
         new(await _accountService.RefreshNonceAsync(request.Address));
+
+    [HttpPost("algononce")]
+    public async Task<NonceResponseDto> PrepareNonce(AlgoNonceRequestDto request) =>
+        new(await _accountService.RefreshNonceAsync(request.Address,isAlgo:true));
 
     [HttpPost("login")]
     [Authorize]
