@@ -54,8 +54,6 @@ public class AccountService
         });
 
         return result;
-
-
     }
 
     public void Register(string address, string name)
