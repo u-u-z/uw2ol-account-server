@@ -57,25 +57,27 @@ public class AccountController : ControllerBase
     [HttpPost("algoauth")]
     public async Task<IActionResult> AlgoAuth(AlgoAuthRequestDto request)
     {
-        var nonce = await _accountService.GetNonceAsync(request.Address);
-
-        if (string.IsNullOrEmpty(nonce))
-             return Unauthorized(new MessageResponseDto("Signature verification failed"));
 
         byte[] signature = Convert.FromBase64String(request.Signature);
         byte[] message = Convert.FromBase64String(request.Message);
         byte[] publicKey = Convert.FromBase64String(request.Address);
+
+        var algoAddressObject = new Algorand.Address(publicKey); // public key --> Algo Address
+        string address = algoAddressObject.EncodeAsString();
+
+        var nonce = await _accountService.GetNonceAsync(address, true);
+
+        if (string.IsNullOrEmpty(nonce))
+             return Unauthorized(new MessageResponseDto("Signature verification failed 1"));
 
         string str = System.Text.Encoding.UTF8.GetString(message);
         bool containsSearchResult = str.Contains(nonce);
         bool result = Chaos.NaCl.Ed25519.Verify(signature, message, publicKey);
 
         if (!( result && containsSearchResult ))
-            return Unauthorized(new MessageResponseDto("Signature verification failed"));
+            return Unauthorized(new MessageResponseDto("Signature verification failed 2"));
 
-        string address = request.Address;
-
-        await _accountService.RefreshNonceAsync(address);
+        await _accountService.RefreshNonceAsync(address,true);
 
         var token = new JwtSecurityToken(
             issuer: _configuration["Jwt:Issuer"],
