@@ -54,38 +54,41 @@ public class AccountController : ControllerBase
         return Ok(new AuthResponseDto(new JwtSecurityTokenHandler().WriteToken(token), _accountService.GetName(address)));
     }
 
-    [HttpGet("algoauth")]
-    public async Task<IActionResult> AlgoAuth()//AlgoAuthRequestDto request
+    [HttpPost("algoauth")]
+    public async Task<IActionResult> AlgoAuth(AlgoAuthRequestDto request)
     {
-        //var nonce = await _accountService.GetNonceAsync(request.Address);
+        var nonce = await _accountService.GetNonceAsync(request.Address);
 
-        //if (string.IsNullOrEmpty(nonce))
-           // return Unauthorized(new MessageResponseDto("Signature verification failed"));
+        if (string.IsNullOrEmpty(nonce))
+             return Unauthorized(new MessageResponseDto("Signature verification failed"));
 
-        byte[] signature = Convert.FromBase64String("SdYJ1/etemnLCtjclYYViv+ODQZOeRwbXmOxZ+gZ053RRMmn0Y9kF3Ao98cVH+uvefprcfJIp0fGjJ497gO4Aw==");
-        byte[] message = Convert.FromBase64String("VFiKo2FtdAGjZmVlzQPoomZ2zgEQPbGjZ2VurHRlc3RuZXQtdjEuMKJnaMQgSGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiKibHbOARBBmaRub3RlxCJJJ20gc2lnbmluZyBteSBvbmUtdGltZSBub25jZTogMjIyo3JjdsQgr2m1NeGvxZIThWd+VeO1Kp/CqEXWF0yLS2n4izSC/fejc25kxCCvabU14a/FkhOFZ35V47Uqn8KoRdYXTItLafiLNIL996R0eXBlo3BheQ==");
-        byte[] publicKey = Convert.FromBase64String("r2m1NeGvxZIThWd+VeO1Kp/CqEXWF0yLS2n4izSC/fc=");
-        var result = Chaos.NaCl.Ed25519.Verify(signature,message,publicKey);
-        return Ok(result);
-        //var address = new EthereumMessageSigner().EncodeUTF8AndEcRecover($"I'm signing my one-time nonce: {nonce}", request.Signature);
+        byte[] signature = Convert.FromBase64String(request.Signature);
+        byte[] message = Convert.FromBase64String(request.Message);
+        byte[] publicKey = Convert.FromBase64String(request.Address);
 
-        //if (!AddressUtil.Current.AreAddressesTheSame(address, request.Address))
-        //    return Unauthorized(new MessageResponseDto("Signature verification failed"));
+        string str = System.Text.Encoding.UTF8.GetString(message);
+        bool containsSearchResult = str.Contains(nonce);
+        bool result = Chaos.NaCl.Ed25519.Verify(signature, message, publicKey);
 
-        //await _accountService.RefreshNonceAsync(address);
+        if (!( result && containsSearchResult ))
+            return Unauthorized(new MessageResponseDto("Signature verification failed"));
 
-        //var token = new JwtSecurityToken(
-        //    issuer: _configuration["Jwt:Issuer"],
-        //    audience: _configuration["Jwt:Audience"],
-        //    claims: new Claim[]
-        //    {
-        //        new("Address", address),
-        //        new Claim("Session", request.Session),
-        //    },
-        //    expires: DateTime.Now.AddMinutes(5),
-        //    signingCredentials: new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256Signature));
+        string address = request.Address;
 
-        //return Ok(new AuthResponseDto(new JwtSecurityTokenHandler().WriteToken(token), _accountService.GetName(address)));
+        await _accountService.RefreshNonceAsync(address);
+
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: new Claim[]
+            {
+                new("Address", address),
+                new Claim("Session", request.Session),
+            },
+            expires: DateTime.Now.AddMinutes(5),
+            signingCredentials: new(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])), SecurityAlgorithms.HmacSha256Signature));
+
+        return Ok(new AuthResponseDto(new JwtSecurityTokenHandler().WriteToken(token), _accountService.GetName(address)));
     }
 
     [HttpPost("nonce")]
